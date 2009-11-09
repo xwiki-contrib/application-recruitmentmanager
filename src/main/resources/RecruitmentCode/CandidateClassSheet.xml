@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xwikidoc>
+<web>RecruitmentCode</web>
+<name>CandidateClassSheet</name>
+<language></language>
+<defaultLanguage>fr</defaultLanguage>
+<translation>0</translation>
+<parent>RecruitmentCode.CandidateClass</parent>
+<creator>xwiki:XWiki.LudovicDubost</creator>
+<author>XWiki.Admin</author>
+<customClass></customClass>
+<contentAuthor>XWiki.Admin</contentAuthor>
+<creationDate>1208332283000</creationDate>
+<date>1255883041000</date>
+<contentUpdateDate>1255883041000</contentUpdateDate>
+<version>11.1</version>
+<title>Candidate Record</title>
+<template></template>
+<defaultTemplate></defaultTemplate>
+<validationScript></validationScript>
+<comment></comment>
+<minorEdit>false</minorEdit>
+<syntaxId>xwiki/1.0</syntaxId>
+<hidden>false</hidden>
+<object>
+<class>
+<name>XWiki.StyleSheetExtension</name>
+<customClass></customClass>
+<customMapping></customMapping>
+<defaultViewSheet></defaultViewSheet>
+<defaultEditSheet></defaultEditSheet>
+<defaultWeb></defaultWeb>
+<nameField></nameField>
+<validationScript></validationScript>
+<cache>
+<cache>0</cache>
+<displayType>select</displayType>
+<multiSelect>0</multiSelect>
+<name>cache</name>
+<number>5</number>
+<prettyName>Caching policy</prettyName>
+<relationalStorage>0</relationalStorage>
+<separator> </separator>
+<separators> ,|</separators>
+<size>1</size>
+<unmodifiable>0</unmodifiable>
+<values>long|short|default|forbid</values>
+<classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+</cache>
+<code>
+<name>code</name>
+<number>2</number>
+<prettyName>Code</prettyName>
+<rows>20</rows>
+<size>50</size>
+<unmodifiable>0</unmodifiable>
+<classType>com.xpn.xwiki.objects.classes.TextAreaClass</classType>
+</code>
+<name>
+<name>name</name>
+<number>1</number>
+<prettyName>Name</prettyName>
+<size>30</size>
+<unmodifiable>0</unmodifiable>
+<classType>com.xpn.xwiki.objects.classes.StringClass</classType>
+</name>
+<parse>
+<displayFormType>select</displayFormType>
+<displayType>yesno</displayType>
+<name>parse</name>
+<number>4</number>
+<prettyName>Parse content</prettyName>
+<unmodifiable>0</unmodifiable>
+<classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
+</parse>
+<use>
+<cache>0</cache>
+<displayType>select</displayType>
+<multiSelect>0</multiSelect>
+<name>use</name>
+<number>3</number>
+<prettyName>Use this extension</prettyName>
+<relationalStorage>0</relationalStorage>
+<separator> </separator>
+<separators> ,|</separators>
+<size>1</size>
+<unmodifiable>0</unmodifiable>
+<values>onDemand=On demand|always=Always</values>
+<classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+</use>
+</class>
+<name>RecruitmentCode.CandidateClassSheet</name>
+<number>0</number>
+<className>XWiki.StyleSheetExtension</className>
+<guid>9284e984-139d-4e9c-b5ca-de87a7119751</guid>
+<property>
+<cache>default</cache>
+</property>
+<property>
+<code>.evaluation {
+   border: 1px solid grey;
+   padding:10px;
+   padding-top:0px;
+}
+.yes {
+   border: 1px solid green;
+}
+.no {
+   border: 1px solid red;
+}
+.hiremention {
+   display:inline;
+   float:right;
+   margin-right:15px;
+   font-size:1em;
+   font-weight:bold;
+   text-transform:uppercase;
+   padding: 5px;
+}
+.hiremention .yes { 
+  color:green; 
+  border: 2px solid green;
+  padding-top: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.hiremention .no { 
+  color:red;   
+  border: 2px solid red;
+  padding:5px;
+}</code>
+</property>
+<property>
+<name></name>
+</property>
+<property>
+<parse>0</parse>
+</property>
+<property>
+<use>onDemand</use>
+</property>
+</object>
+<object>
+<class>
+<name>XWiki.TagClass</name>
+<customClass></customClass>
+<customMapping></customMapping>
+<defaultViewSheet></defaultViewSheet>
+<defaultEditSheet></defaultEditSheet>
+<defaultWeb></defaultWeb>
+<nameField></nameField>
+<validationScript></validationScript>
+<tags>
+<cache>0</cache>
+<displayType>checkbox</displayType>
+<multiSelect>1</multiSelect>
+<name>tags</name>
+<number>1</number>
+<prettyName>Tags</prettyName>
+<relationalStorage>1</relationalStorage>
+<separator> </separator>
+<separators> ,|</separators>
+<size>30</size>
+<unmodifiable>0</unmodifiable>
+<values></values>
+<classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+</tags>
+</class>
+<name>RecruitmentCode.CandidateClassSheet</name>
+<number>0</number>
+<className>XWiki.TagClass</className>
+<guid>60f1bd9f-85f6-47d4-acee-a926810b7e8e</guid>
+<property>
+<tags/>
+</property>
+</object>
+<content>#if($doc.isNew())
+1 New Candidate
+#else
+1 Candidate $doc.display("first_name", "view")  $doc.display("last_name", "view")
+#end
+
+#set($ok = $xwiki.ssx.use("RecruitmentCode.CandidateClassSheet"))
+1.1 Details
+
+$doc.use("RecruitementCode.CandidateClass")
+&lt;dl&gt;
+#foreach($prop in ["first_name", "last_name", "email", "phone", "skype", "office", "department", "status", "rating", "details", "nextsteps", "assignee"])
+&lt;dt&gt; $doc.displayPrettyName($prop) &lt;/dt&gt;
+&lt;dd&gt;$doc.display($prop)&lt;/dd&gt;
+#end
+&lt;/dl&gt;
+
+1.1 Evaluations
+&lt;a name="Evaluations"&gt;&lt;/a&gt;
+#set($evals = $doc.getObjects("RecruitmentCode.EvaluationClass"))
+#set($evaluators=$util.arrayList)
+#if($evals.size() == 0)
+#info("This candidate has not been evaluated yet.")
+#else
+#foreach($eval in $evals)
+#set($ok = $evaluators.add($eval.getProperty("evaluator").value))
+#set($doHire = $eval.getProperty("hire").value)
+#if($doHire == 1) #set($hire = "yes") #elseif($doHire == 0) #set($hire = "no") #else #set($hire = "") #end
+&lt;div class="evaluation $!hire"&gt;
+1.1.1 Evaluation by [$eval.evaluator] #if($eval.getProperty("evaluator").value == "$context.user") (you) #set($isYou=true)#else #set($isYou=false) #end
+#if("$!hire" != "")&lt;div class="hiremention"&gt;&lt;span class="$hire"&gt;$hire&lt;/span&gt;&lt;/div&gt;#end
+#if(!$isYou)
+* *Mark:* $eval.mark / 10
+* *Hire:* $eval.hire
+* *Details:* $eval.details
+#else
+&lt;form action="$doc.getURL("save")" method="post"&gt;
+&lt;input type="hidden" name="xredirect" value="$doc.getURL("view")#Evaluations"&gt;
+&lt;dt&gt;Mark&lt;/dt&gt;
+&lt;dd&gt;$doc.display("mark", "edit", $eval) / 10&lt;dd&gt;
+&lt;dt&gt;Hire&lt;/dt&gt;
+&lt;dd&gt;$doc.display("hire", "edit", $eval)&lt;/dd&gt;
+&lt;dt&gt;Details&lt;/dt&gt;
+&lt;dd&gt;$doc.display("details", "edit", $eval)&lt;/dd&gt;
+&lt;input type="submit" value="Save my evaluation" style="margin-top:10px;"&gt;
+#end
+&lt;/div&gt;
+#end
+#end
+#if($hasEdit &amp;&amp; !$evaluators.contains($context.user))
+&lt;form action="$doc.getURL("objectadd")" method="post"&gt;
+&lt;input type="hidden" name="xredirect" value="$doc.getURL("view")#Evaluations"&gt;
+&lt;input type="hidden" name="classname" value="RecruitmentCode.EvaluationClass" /&gt;
+&lt;input type="hidden" name="RecruitmentCode.EvaluationClass_evaluator" value="$context.user" /&gt;
+&lt;input type="submit" value="Evaluate this candidate" style="margin-top:20px;"&gt;
+&lt;/form&gt;
+#end
+</content></xwikidoc>

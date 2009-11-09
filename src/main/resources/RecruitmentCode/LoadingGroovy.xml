@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xwikidoc>
+<web>RecruitmentCode</web>
+<name>LoadingGroovy</name>
+<language></language>
+<defaultLanguage></defaultLanguage>
+<translation>0</translation>
+<parent></parent>
+<creator>XWiki.Admin</creator>
+<author>XWiki.Admin</author>
+<customClass></customClass>
+<contentAuthor>XWiki.Admin</contentAuthor>
+<creationDate>1242573332000</creationDate>
+<date>1255883041000</date>
+<contentUpdateDate>1255883041000</contentUpdateDate>
+<version>3.1</version>
+<title>LoadingGroovy</title>
+<template></template>
+<defaultTemplate></defaultTemplate>
+<validationScript></validationScript>
+<comment></comment>
+<minorEdit>false</minorEdit>
+<syntaxId>xwiki/1.0</syntaxId>
+<hidden>false</hidden>
+<object>
+<class>
+<name>XWiki.TagClass</name>
+<customClass></customClass>
+<customMapping></customMapping>
+<defaultViewSheet></defaultViewSheet>
+<defaultEditSheet></defaultEditSheet>
+<defaultWeb></defaultWeb>
+<nameField></nameField>
+<validationScript></validationScript>
+<tags>
+<cache>0</cache>
+<displayType>checkbox</displayType>
+<multiSelect>1</multiSelect>
+<name>tags</name>
+<number>1</number>
+<prettyName>Tags</prettyName>
+<relationalStorage>1</relationalStorage>
+<separator> </separator>
+<separators> ,|</separators>
+<size>30</size>
+<unmodifiable>0</unmodifiable>
+<values></values>
+<classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+</tags>
+</class>
+<name>RecruitmentCode.LoadingGroovy</name>
+<number>0</number>
+<className>XWiki.TagClass</className>
+<guid>7ee48d63-af74-4325-8b62-379997370e62</guid>
+<property>
+<tags/>
+</property>
+</object>
+<content>
+import java.util.*;
+import javax.mail.Folder;
+import com.xpn.xwiki.doc.*;
+import com.xpn.xwiki.*;
+import com.xpn.xwiki.util.Util;
+import java.io.*;
+import javax.mail.*;
+
+public class LoadRecruitmentContactGroovy {
+ def context;
+ def xwiki;
+ def protocol;
+ def server;
+ def user;
+ def pass;
+ def defaultUser;
+ def debug = "";
+
+ public isInstalled() {
+   return "yes";
+ }
+
+ public addDebug(message) {
+   debug += message + "\n";
+ }
+
+ public getDebug() {
+   return debug;
+ }
+
+ public void setContext(context, xwiki) {
+   this.context = context;
+   this.xwiki = xwiki;
+ }
+
+ public String getLoadingUser() {
+   if (defaultUser==null || defaultUser=="")
+    return "XWiki.Admin";
+   else
+    return defaultUser;
+ }
+
+ public void setMailServerFromPage(page) {
+   def settingsDoc = xwiki.getDocument(page);
+   settingsDoc.use("RecruitmentCode.SettingsClass");
+   this.protocol = settingsDoc.getValue("mailprotocol");
+   this.server = settingsDoc.getValue("mailserver");
+   this.user = settingsDoc.getValue("mailuser");
+
+   if (this.server.contains("gmail.com"))
+    this.user = "recent:" + this.user;
+
+   this.pass = settingsDoc.getValue("mailpassword");
+   this.defaultUser = settingsDoc.getValue("user");
+ }
+
+ public void setMailServer(protocol, server, user, pass) {
+   this.protocol = protocol;
+   this.server = server;
+   this.user = user;
+   this.pass = pass;
+ }
+
+ public int checkContacts() {
+   try {
+    return xwiki.mail.checkMail(protocol, server, user, pass)
+   } catch (Throwable e) {
+    addDebug("Failed to connect to mail server " + e.getMessage())
+    return -1;
+   }
+ }
+
+ public boolean loadContact(mail, confirm) {
+  addDebug("Getting mail content");
+  def bodypart = mail.getContent();
+  def content = getMailContent(bodypart);
+  if (content.length()&gt;50000) {
+   content = content.substring(0, 50000);
+   addDebug("Content to big: " + content);
+  }
+
+  def address = getMailAddress(mail, mail.getContent());
+  
+  def name = address.personal;
+  def fname = "";
+  def lname = "";
+
+  def pos = name.indexOf(" ");
+  if (pos != -1) {
+   fname = name.substring(0, pos);
+   lname = name.substring(pos + 1);
+  } else {
+   fname = "";
+   lname = name;
+  }
+
+  addDebug("Extracted name: " + name + " - " + fname + " - " + lname);
+
+  def wikiname = xwiki.clearName(name.replaceAll(" ",""));
+
+  addDebug("Wiki name: " + wikiname);
+
+    if (wikiname=="") {
+      addDebug("No name extracted");
+      return false;
+    }
+
+    def contactDoc = xwiki.getDocument("Recruitment.$wikiname")
+    boolean alreadyLoaded = false;
+    if (!contactDoc.isNew()) {
+     contactDoc.use("RecruitmentCode.CandidateClass")
+     def pfname = contactDoc.getValue("first_name")
+     def plname = contactDoc.getValue("last_name")
+     if (pfname==fname &amp;&amp; plname==lname) {
+       alreadyLoaded = true;
+       addDebug("contact exist: " + wikiname);
+     } else {
+        if (pfname!=fname)
+         addDebug("fname different");
+        if (plname!=lname)
+         addDebug("lname different");
+        return false;
+     }
+    } 
+
+    if (!alreadyLoaded) {
+      def pagename = xwiki.getUniquePageName("Recruitment", wikiname)
+      contactDoc = xwiki.getDocument("Recruitment.${pagename}")
+      contactDoc.use(contactDoc.newObject("RecruitmentCode.CandidateClass"))
+      contactDoc.set("first_name", fname)
+      contactDoc.set("last_name", lname)
+      contactDoc.set("email", address.getAddress())
+      contactDoc.set("status", "none")
+      contactDoc.set("rating", -1)
+      contactDoc.set("details", content)
+      contactDoc.setContent(xwiki.getDocument("RecruitmentCode.CandidateClassTemplate").getContent())
+      contactDoc.setTitle("Candidate ${name}")
+      contactDoc.setComment("Added candidate from email")
+
+      // addDebug("User: " + pagename + "-" + contactDoc.email + "-" + contactDoc.download + "-" + contactDoc.downloaddate + "-" + contactDoc.downloadreason + "-" + contactDoc.first_name + "-" + contactDoc.last_name + "-" + contactDoc.officephone + "-" + contactDoc.country)
+      contactDoc.use(contactDoc.newObject("XWiki.Tags"))
+      contactDoc.set("tags", "candidate")
+      if (confirm) {
+        context.getContext().setUser(getLoadingUser())
+        contactDoc.save()
+
+        def bodyparts = xwiki.getArrayList();
+        def nbAttachs = getMailAttachments(bodypart, bodyparts);
+        addDebug("Attaching " + nbAttachs + " attachments");
+        try {
+          addAttachmentFromMail(contactDoc, bodyparts, context);
+        } catch (Exception e) {
+          e.printStackTrace()
+          addDebug("Failed to attach files to email with exception " + e.getMessage())
+        }
+        return true;
+      }
+  } else {
+     addDebug("Contact already loaded");
+     return false;
+  } 
+
+ }
+
+ public boolean loadContacts(int nb, withDelete) {
+   try {
+
+   def loadingUserDoc = xwiki.getDocument(getLoadingUser());
+   if (loadingUserDoc.isNew() || !loadingUserDoc.getObject("XWiki.XWikiUsers")) {
+    addDebug("Loading user set in Settings does not exist. Cannot load emails")
+    return false;
+   }
+
+   // Get a session.  Use a blank Properties object.
+   def props = new Properties();
+   // necessary to work with Gmail
+   props.put("mail.imap.partialfetch", "false");
+   props.put("mail.imaps.partialfetch", "false");
+   def session = Session.getInstance(props);
+   // Get a Store object
+   def store = session.getStore(protocol);
+
+   store.connect(server, user, pass) 
+   def fldr = store.getFolder("INBOX")
+   fldr.open(Folder.READ_WRITE)
+   
+   if (fldr.getMessageCount()&lt; nb)
+    nb = fldr.getMessageCount()
+   def messages = fldr.getMessages(1, nb)
+   for(mail in messages) {
+      try {
+      addDebug("Loading mail")
+      if (loadContact(mail, true)==true) {
+       if (withDelete==true) {
+        mail.setFlag(Flags.Flag.DELETED, true);
+       }
+      }
+     } catch (Exception e) {
+      addDebug("Failed to load mail with exception " + e.getMessage())
+     }
+   }
+   if (withDelete) {
+    fldr.close(true);
+   } else {
+    fldr.close(false);
+   }  
+   store.close();
+   System.out.println(getDebug());
+   return true;
+  } catch (Throwable e) {
+    addDebug("Failed to load emails with exception " + e.getMessage())
+    return false;
+  }
+ }
+
+ 
+ public int addAttachments(doc1, context1) {
+        def doc = doc1.document;
+        def context = context1.context;
+        def xwiki = context.getWiki()
+        int nb = 0;
+        def fileupload = xwiki.getPlugin("fileupload",context)
+        for (fileitem in fileupload.getFileItems(context)) {
+         if (!fileitem.isFormField()) {
+         def name = fileitem.fieldName
+         byte[] data = fileupload.getFileItemData(name, context);
+         if ((data!=null)&amp;&amp;(data.length&gt;0)) {
+         String fname = fileupload.getFileName(name, context);
+         int i = fname.lastIndexOf("\\");
+         if (i==-1)
+            i = fname.lastIndexOf("/");
+         def filename = fname.substring(i+1);
+         filename = filename.replaceAll("\\+"," ");
+         def attachment = new XWikiAttachment();
+         doc.getAttachmentList().add(attachment);
+         attachment.setContent(data);
+         attachment.setFilename(filename);
+         // TODO: handle Author
+         attachment.setAuthor(context1.user);
+         // Add the attachment to the document
+         attachment.setDoc(doc);
+         doc.saveAttachmentContent(attachment, context);
+         nb++;
+          }
+         }
+        }
+       return nb;
+ }      
+
+ public int addAttachmentFromMail(doc1, afilename, adata, context1) {
+        def fname = afilename;
+        int i = fname.lastIndexOf("\\");
+        if (i==-1)
+            i = fname.lastIndexOf("/");
+         def filename = fname.substring(i+1);
+         filename = filename.replaceAll("\\+"," ");
+
+         addDebug("adding attachment: " + filename);
+
+         def doc = doc1.getDocument();
+         def context = context1.getContext();
+         def xwiki = context.getWiki()
+         def attachment = new XWikiAttachment();
+         doc.getAttachmentList().add(attachment);
+         attachment.setContent(adata);
+         attachment.setFilename(filename);
+         // TODO: handle Author
+         attachment.setAuthor(context1.user);
+         // Add the attachment to the document
+         attachment.setDoc(doc);
+         addDebug("saving attachment: " + filename);
+         doc.saveAttachmentContent(attachment, context);
+         return 1;
+ }
+
+ public int addAttachmentFromMail(doc1, bodyparts, context1) {
+   def nb = 0;
+   for(bodypart in bodyparts) {
+   String fileName = bodypart.getFileName();
+   addDebug("Treating attachment: " + fileName);
+   if (fileName==null)
+    fileName = "fichier.doc"
+   String disposition = bodypart.getDisposition();
+   String contentType = bodypart.getContentType().toLowerCase();
+
+   addDebug("Treating attachment of type: " + bodypart.getContentType());
+  
+   def baos =  new ByteArrayOutputStream();
+    OutputStream out = new BufferedOutputStream(baos);
+    // We can't just use p.writeTo() here because it doesn't
+    // decode the attachment. Instead we copy the input stream
+    // onto the output stream which does automatically decode
+    // Base-64, quoted printable, and a variety of other formats.
+    InputStream ins = new BufferedInputStream(bodypart.getInputStream());
+    int b = ins.read()
+    while (b != -1) {
+     out.write(b);
+     b = ins.read();
+    }
+    out.flush();
+    out.close();
+    ins.close();
+
+   addDebug("Treating attachment step 3: " + fileName);
+
+     byte[] data = baos.toByteArray();
+     addDebug("Ready to attach attachment: " + fileName);
+     nb += addAttachmentFromMail(doc1, fileName, data, context1);
+    }
+    return nb;
+ }
+
+ public String getMailContent(bodypart) {
+     String content = ""
+     try {
+     def mcount = bodypart.getCount();
+     def i = 0;
+     while (i&lt;mcount) {
+      def newbodypart = bodypart.getBodyPart(i)
+      if(newbodypart.getContentType().toLowerCase().contains("vcard")) {
+         addDebug("Adding vcard to content");
+         if (!content.toLowerCase().contains("xwiki"))
+           content = "${content} ${newbodypart.content}"
+      } else if(newbodypart.getContentType().toLowerCase().startsWith("text/")) {
+         addDebug("Adding text to content");
+         // addDebug("Adding text to content (type is " + newbodypart.getContentType().toLowerCase() + "): " + newbodypart.content);
+         content = "${content} ${newbodypart.content}"
+      }
+
+
+      if(newbodypart.getContentType().toLowerCase().startsWith("multipart/")) {
+       addDebug("Adding multipart to content");
+       def ncontent = getMailContent(newbodypart.content)
+       if (ncontent!="") 
+        content = "${content} ${ncontent}"
+      }
+
+      if (newbodypart.getContentType().toLowerCase().startsWith("message/rfc822")) {
+        addDebug("Adding rfc822 to content");
+        def ncontent = getMailContent(newbodypart.content.content)
+        if (ncontent!="") 
+         content = "${content} ${ncontent}"  
+      }
+     
+      i++;
+     }
+
+     return content;
+     } catch (Exception e) {
+      addDebug("Failed to get Mail Content " + e.getMessage());
+      e.printStackTrace();
+      return "Failed to get Mail Content";
+     }
+ }      
+
+
+ public int getMailAttachments(bodypart, bodyparts) {
+     try {
+     def nb = 0;
+     def mcount = bodypart.getCount();
+     def i = 0;
+     while (i&lt;mcount) {     
+      def newbodypart = bodypart.getBodyPart(i)
+
+      if(newbodypart.getContentType().toLowerCase().startsWith("application/")) {
+       nb++;
+       bodyparts.add(newbodypart)
+      }
+    
+      if(newbodypart.getContentType().toLowerCase().startsWith("multipart/")) {
+       nb += getMailAttachments(newbodypart.content,bodyparts)
+      }
+
+      if(newbodypart.getContentType().toLowerCase().startsWith("message/rfc822")) {
+       nb += getMailAttachments(newbodypart.content.content,bodyparts)
+      }
+      
+      i++;
+     }   
+     return nb;
+      } catch (Exception e) {
+      return 0;
+     }
+ }      
+
+ public Object getMailAddress(message, bodypart) {
+     def address = (message==null) ? "" : message.getFrom()[0];
+     addDebug("Found address: " + address);
+     try {
+     def mcount = bodypart.getCount();
+     addDebug("Found body parts: " + mcount);
+     def i = 0;
+     while (i&lt;mcount) {
+      def newbodypart = bodypart.getBodyPart(i)
+
+      addDebug("Checking body part " + i + " " + newbodypart.getContentType().toLowerCase());
+
+      if(newbodypart.getContentType().toLowerCase().startsWith("multipart/")) {
+       def add = getMailAddress(null, newbodypart.content)
+       addDebug("Found address in multipart: " + add);
+        if ((add!=null)&amp;&amp;(add!="")) 
+        address = add;
+      }
+
+      if (newbodypart.getContentType().toLowerCase().startsWith("message/rfc822")) {
+        def add = getMailAddress(newbodypart.content, newbodypart.content.content)
+        addDebug("Found address in rfc822: " + add);
+        if ((add!=null)&amp;&amp;(add!="")) 
+         address = add;
+      }
+     
+      i++;
+     }
+     return address;
+     } catch (Exception e) {
+      return address;
+     }
+ }   
+
+ public Map readMail(content) {
+   def map = new HashMap();
+   def lines = content.split("\n")
+   for (line in lines) {
+      def i = line.indexOf("=");
+      if (i!=-1) {
+        def key = line.substring(0, i).trim();
+        def value = line.substring(i+1).trim();
+        if (mapping.get(key))
+         key = mapping.get(key);
+        map.put(key, value);
+      }
+   }
+   return map;
+ }
+
+
+}</content>
+</xwikidoc>
