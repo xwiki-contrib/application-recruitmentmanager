@@ -8,7 +8,7 @@
   <groupId>com.xpn.xwiki.platform.applications</groupId>
   <artifactId>xwiki-application-recruitmentmanager</artifactId>
   <packaging>xar</packaging>
-  <name>XWiki Platform - Applications - Recruitment Manager</name>
+  <name>Contrib - Applications - Recruitment Manager</name>
   <version>1.1-SNAPSHOT</version>
   <description>Application that allows to manager candidates</description>
 </project>
