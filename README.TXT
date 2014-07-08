@@ -1,3 +1,5 @@
+Now superseded by http://extensions.xwiki.org/xwiki/bin/view/Extension/Recruitment+application
+
 
 XWIKI RECRUITMENT MANAGER
 -------------------------
